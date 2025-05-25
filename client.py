@@ -178,6 +178,7 @@ class GameUI:
         self.last_y = 0
         self.potential_move_x = 0
         self.potential_move_y = 0
+        self.winning_positions = []  # Store winning positions
         
         self.setup_ui()
         
@@ -353,6 +354,10 @@ class GameUI:
         for (x, y), symbol in self.game_client.board.items():
             self.draw_symbol(x, y, symbol)
             
+        # Redraw winning positions if any
+        for x, y in self.winning_positions:
+            self.highlight_cell(x, y)
+            
     def draw_symbol(self, x: int, y: int, symbol: str):
         """Draw a symbol on the canvas"""
         # Calculate the center of the cell
@@ -485,16 +490,20 @@ class GameUI:
             if data.get("is_win"):
                 winner = data.get("winner")
                 self.status_var.set(f"Game over! {winner} wins!")
-                # Highlight winning positions
+                # Store and highlight winning positions
+                logger.info(f"Winning positions: {data['winning_positions']}")
                 if "winning_positions" in data:
-                    for x, y in data["winning_positions"]:
+                    self.winning_positions = data["winning_positions"]  # Store winning positions
+                    for x, y in self.winning_positions:
                         self.highlight_cell(x, y)
             elif data.get("is_draw"):
                 self.status_var.set("Game over! It's a draw!")
+                self.winning_positions = []  # Clear winning positions on draw
         else:
             current_turn = data.get("current_turn", "")
             is_my_turn = data.get("is_my_turn", False)
             self.status_var.set(f"Current turn: {current_turn} {'(Your turn!)' if is_my_turn else ''}")
+            self.winning_positions = []  # Clear winning positions when game continues
             
         # Redraw the board
         self.draw_grid()
@@ -508,12 +517,13 @@ class GameUI:
         canvas_x = self.offset_x + x * self.cell_size * self.zoom_level
         canvas_y = self.offset_y + y * self.cell_size * self.zoom_level
         
-        # Create a highlight rectangle
+        # Create a highlight rectangle with a gradient-like effect and transparency
         self.canvas.create_rectangle(
             canvas_x, canvas_y,
             canvas_x + self.cell_size * self.zoom_level,
             canvas_y + self.cell_size * self.zoom_level,
-            fill="yellow", stipple="gray50",  # Semi-transparent yellow
+            outline="#228B22",  # Forest green outline
+            width=2 * self.zoom_level,
             tags="highlight"
         )
         
