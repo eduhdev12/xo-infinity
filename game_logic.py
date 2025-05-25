@@ -56,7 +56,6 @@ def get_winning_positions(room: GameRoom, last_x: int, last_y: int) -> Optional[
         return None
         
     symbol = room.board[(last_x, last_y)]
-    winning_positions = [(last_x, last_y)]
     
     # Check all possible directions for a win
     directions = [
@@ -72,12 +71,14 @@ def get_winning_positions(room: GameRoom, last_x: int, last_y: int) -> Optional[
         # Check in both directions
         for dx, dy in dir_pair:
             x, y = last_x, last_y
+            count = 1
             while True:
                 x += dx
                 y += dy
                 if (x, y) not in room.board or room.board[(x, y)] != symbol:
                     break
                 positions.append((x, y))
+                count += 1
                 
         if len(positions) >= 5:  # Win condition: 5 in a row
             return positions
@@ -105,14 +106,13 @@ def check_draw_condition(room: GameRoom) -> bool:
     return True
 
 def check_win_condition(room: GameRoom, last_x: int, last_y: int) -> Dict:
-    """Check if the last move resulted in a win or draw"""
+    """Check if the last move resulted in a win"""
     winning_positions = get_winning_positions(room, last_x, last_y)
-    is_draw = check_draw_condition(room)
     
     return {
         "is_win": winning_positions is not None,
         "winning_positions": winning_positions,
-        "is_draw": is_draw
+        "is_draw": False  # Draw is not possible in infinite board
     }
 
 def make_move(room: GameRoom, player: Player, x: int, y: int) -> Dict:
@@ -144,15 +144,6 @@ def make_move(room: GameRoom, player: Player, x: int, y: int) -> Dict:
             "is_win": True,
             "winning_positions": win_result["winning_positions"],
             "winner": player.name,
-            "is_game_over": True
-        }
-    elif win_result["is_draw"]:
-        room.is_game_over = True
-        return {
-            "success": True,
-            "is_win": False,
-            "is_draw": True,
-            "winner": None,
             "is_game_over": True
         }
     

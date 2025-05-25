@@ -269,6 +269,12 @@ class GameUI:
             messagebox.showerror("Error", "Please enter a player name")
             return
             
+        # Clean the canvas and reset game state
+        self.canvas.delete("all")
+        self.game_client.board = {}
+        self.game_client.game_over = False
+        self.game_client.is_my_turn = False
+        
         logger.info(f"Creating room for player: {player_name}")
         self.game_client.create_room(player_name)
         
@@ -282,6 +288,12 @@ class GameUI:
             messagebox.showerror("Error", "Please enter room ID and player name")
             return
             
+        # Clean the canvas and reset game state
+        self.canvas.delete("all")
+        self.game_client.board = {}
+        self.game_client.game_over = False
+        self.game_client.is_my_turn = False
+        
         logger.info(f"Joining room {room_id} as {player_name} with symbol {symbol}")
         self.game_client.join_room(room_id, player_name, symbol)
         
@@ -529,3 +541,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     game = GameUI(root)
     game.run()
+    root.mainloop()
