@@ -259,6 +259,8 @@ class GameUI:
         if not self.game_client.connect():
             messagebox.showerror("Error", "Failed to connect to server")
             self.root.quit()
+        else:
+            self.game_client.get_leaderboard()
             
         # Initial grid drawing
         self.draw_grid()
