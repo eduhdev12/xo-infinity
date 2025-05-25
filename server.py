@@ -4,7 +4,6 @@ import pickle
 import uuid
 from collections import defaultdict
 
-# Constante locale dacă game_logic.py nu este accesibil
 PLAYER_X = 1
 PLAYER_O = 2
 
@@ -94,7 +93,6 @@ class GameServer:
                 conn.close()
 
     def init_board(self):
-        """Inițializează tabla de joc 3x3"""
         return [[0 for _ in range(3)] for _ in range(3)]
 
     def send_message(self, conn, msg):
@@ -143,7 +141,6 @@ class GameServer:
             print(f"[SERVER] Player {player_name} is ready in room {room_id}")
             self.broadcast_room_info(room_id)
 
-            # Verifică dacă ambii jucători sunt gata
             if len(self.players_ready[room_id]) == 2 and len(room['players']) == 2:
                 self.start_game(room_id)
 
@@ -155,20 +152,17 @@ class GameServer:
                 self.restart_game(room_id)
 
     def start_game(self, room_id):
-        """Începe jocul în cameră"""
         room = self.rooms[room_id]
         room['game_started'] = True
         room['game_over'] = False
         room['winner'] = None
-        room['board'] = {}  # Pentru jocul infinit folosim dict
+        room['board'] = {}
 
-        # Primul jucător (X) începe
         first_player = self.players_in_room_order[room_id][0]
         room['turn'] = first_player
 
         print(f"[SERVER] Game started in room {room_id}. Turn: {first_player}")
 
-        # Trimite mesaj de inițializare pentru fiecare jucător
         for player_name in room['players']:
             is_my_turn = (player_name == first_player)
             self.send_message(room['players'][player_name], {
@@ -180,7 +174,6 @@ class GameServer:
             })
 
     def handle_move(self, player_name, room_id, msg):
-        """Gestionează mutarea unui jucător"""
         room = self.rooms[room_id]
 
         if not room['game_started'] or room['game_over']:
@@ -195,7 +188,6 @@ class GameServer:
 
         x, y = msg['x'], msg['y']
 
-        # Verifică dacă mutarea este validă (poziția nu este ocupată)
         if (x, y) in room['board']:
             self.send_message(room['players'][player_name], {
                 "type": "error",
@@ -203,13 +195,11 @@ class GameServer:
             })
             return
 
-        # Aplică mutarea
         player_symbol = room['player_symbols'][player_name]
         room['board'][(x, y)] = player_symbol
 
         print(f"[SERVER] Player {player_name} moved to ({x}, {y}) in room {room_id}")
 
-        # Verifică dacă jocul s-a terminat (în jocul infinit trebuie să implementezi logica de 5 în linie)
         winner = self.check_winner_infinite(room['board'], x, y, player_symbol)
 
         if winner:
@@ -222,7 +212,6 @@ class GameServer:
                     winner_name = name
                     break
 
-            # Trimite mesajul de câștig cu ultima mutare
             for other_player_name in room['players']:
                 self.send_message(room['players'][other_player_name], {
                     "type": "win",
@@ -233,13 +222,11 @@ class GameServer:
                 })
             print(f"[SERVER] Game over in room {room_id}. Winner: {winner_name}")
         else:
-            # Schimbă rândul
             current_index = self.players_in_room_order[room_id].index(player_name)
             next_index = (current_index + 1) % len(self.players_in_room_order[room_id])
             next_player = self.players_in_room_order[room_id][next_index]
             room['turn'] = next_player
 
-            # Trimite update la ambii jucători
             for other_player_name in room['players']:
                 is_my_turn = (other_player_name == next_player)
                 self.send_message(room['players'][other_player_name], {
@@ -252,19 +239,16 @@ class GameServer:
                 })
 
     def check_winner_infinite(self, board, x, y, player_symbol):
-        """Verifică dacă există câștigător în jocul infinit (5 în linie)"""
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]  # orizontal, vertical, diagonale
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
         for dx, dy in directions:
-            count = 1  # Include piesa curentă
+            count = 1
 
-            # Verifică în o direcție
             i, j = x + dx, y + dy
             while (i, j) in board and board[(i, j)] == player_symbol:
                 count += 1
                 i, j = i + dx, j + dy
 
-            # Verifică în direcția opusă
             i, j = x - dx, y - dy
             while (i, j) in board and board[(i, j)] == player_symbol:
                 count += 1
@@ -276,18 +260,14 @@ class GameServer:
         return None
 
     def check_winner(self, board):
-        """Verifică dacă există un câștigător"""
-        # Verifică rândurile
         for row in board:
             if row[0] == row[1] == row[2] != 0:
                 return row[0]
 
-        # Verifică coloanele
         for col in range(3):
             if board[0][col] == board[1][col] == board[2][col] != 0:
                 return board[0][col]
 
-        # Verifică diagonalele
         if board[0][0] == board[1][1] == board[2][2] != 0:
             return board[0][0]
         if board[0][2] == board[1][1] == board[2][0] != 0:
@@ -296,7 +276,6 @@ class GameServer:
         return None
 
     def is_board_full(self, board):
-        """Verifică dacă tabla este plină"""
         for row in board:
             for cell in row:
                 if cell == 0:
@@ -304,7 +283,6 @@ class GameServer:
         return True
 
     def restart_game(self, room_id):
-        """Restartează jocul în cameră"""
         room = self.rooms[room_id]
         room['game_started'] = False
         room['game_over'] = False
@@ -312,7 +290,6 @@ class GameServer:
         room['board'] = {}
         room['turn'] = None
 
-        # Resetează statusul ready
         self.players_ready[room_id].clear()
 
         print(f"[SERVER] Game restarted in room {room_id}")
@@ -325,7 +302,6 @@ class GameServer:
         self.broadcast_room_info(room_id)
 
     def remove_player_from_room(self, player_name, room_id, conn):
-        """Elimină un jucător din cameră"""
         try:
             conn.close()
         except:
@@ -346,7 +322,6 @@ class GameServer:
         if room_id in self.players_ready and player_name in self.players_ready[room_id]:
             self.players_ready[room_id].discard(player_name)
 
-        # Dacă camera este goală, o ștergem
         if room_id in self.rooms and len(self.rooms[room_id]['players']) == 0:
             del self.rooms[room_id]
             if room_id in self.players_in_room_order:
@@ -355,14 +330,12 @@ class GameServer:
                 del self.players_ready[room_id]
             print(f"[SERVER] Room {room_id} deleted (empty)")
         else:
-            # Anunță ceilalți jucători
             self.broadcast_to_room(room_id, {
                 "type": "player_disconnected",
                 "player": player_name
             })
             self.broadcast_room_info(room_id)
 
-            # Dacă jocul era în desfășurare, îl terminăm
             if room_id in self.rooms and self.rooms[room_id]['game_started'] and not self.rooms[room_id]['game_over']:
                 self.rooms[room_id]['game_over'] = True
                 self.broadcast_to_room(room_id, {

@@ -5,7 +5,6 @@ import math
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, scrolledtext
 
-# Constante locale dacă game_logic.py nu este accesibil
 PLAYER_X = 1
 PLAYER_O = 2
 
@@ -28,7 +27,7 @@ class GameClient:
         self.is_dragging = False
         self.last_mouse_x = 0
         self.last_mouse_y = 0
-        self.drag_threshold = 5  # pixeli pentru a determina dacă e click sau drag
+        self.drag_threshold = 5
 
         self.root = tk.Tk()
         self.root.title("Amoba Game")
@@ -70,7 +69,6 @@ class GameClient:
         self.canvas = tk.Canvas(self.game_frame, bg="white", highlightthickness=0)
         self.canvas.pack(fill='both', expand=True)
 
-        # Variabile pentru drag detection
         self.mouse_press_x = 0
         self.mouse_press_y = 0
         self.has_dragged = False
@@ -170,7 +168,6 @@ class GameClient:
             self.is_my_turn = msg["is_my_turn"]
             self.player_symbol = msg["player_symbol"]
 
-            # Actualizează tabla din mesajul server-ului
             if "board" in msg and msg["board"]:
                 self.board.update(msg["board"])
 
@@ -189,13 +186,12 @@ class GameClient:
             print(
                 f"[CLIENT {self.name}] UPDATE received: x={msg['x']}, y={msg['y']}, player_symbol={msg['player_symbol']}, is_my_turn={msg['is_my_turn']}")
 
-            # Actualizează tabla
             self.board[(msg["x"], msg["y"])] = msg["player_symbol"]
             self.is_my_turn = msg["is_my_turn"]
 
             print(f"[CLIENT {self.name}] Board updated. My turn now: {self.is_my_turn}")
             print(
-                f"[CLIENT {self.name}] Current board state: {dict(list(self.board.items())[:5])}...")  # Arată primele 5 piese
+                f"[CLIENT {self.name}] Current board state: {dict(list(self.board.items())[:5])}...")
 
             self.draw_board()
             turn_text = "Rândul tău!" if self.is_my_turn else f"Rândul lui {msg.get('turn', 'adversarul')}"
@@ -205,8 +201,7 @@ class GameClient:
         elif msg["type"] == "win":
             print(f"[CLIENT {self.name}] WIN received: winner={msg['winner']}")
 
-            # Actualizează tabla cu ultima mutare
-            if msg["x"] != -1 and msg["y"] != -1:  # -1,-1 înseamnă abandon
+            if msg["x"] != -1 and msg["y"] != -1:
                 self.board[(msg["x"], msg["y"])] = msg["player_symbol"]
 
             self.draw_board()
@@ -219,7 +214,6 @@ class GameClient:
                 f"{self.name} | Camera: {self.room_id} | Jucător: {'X' if self.player_symbol == PLAYER_X else 'O'} | {winner} a câștigat!")
             messagebox.showinfo("Final", f"{winner} a câștigat!", parent=self.root)
 
-            # Resetează pentru un joc nou
             self.ready_btn.config(state='normal', text="✅ Sunt gata")
             self.is_ready = False
             self.board.clear()
@@ -251,7 +245,6 @@ class GameClient:
             f"[CLIENT {self.name}] DEBUG: current_cell_size: {current_cell_size}, offset_x: {self.offset_x}, offset_y: {self.offset_y}")
         print(f"[CLIENT {self.name}] DEBUG: Visible cols: {start_col}-{end_col}, rows: {start_row}-{end_row}")
 
-        # Desenează grila
         for col in range(start_col - 1, end_col + 1):
             canvas_x = self.offset_x + col * current_cell_size
             self.canvas.create_line(canvas_x, 0, canvas_x, canvas_height, fill="#e0e0e0", width=1)
@@ -264,7 +257,6 @@ class GameClient:
             if row % 5 == 0:
                 self.canvas.create_text(10, canvas_y, text=str(row), fill="gray", font=("Arial", 8))
 
-        # Desenează piesele
         pieces_drawn = 0
         for (x, y), player_symbol in self.board.items():
             px = self.offset_x + x * current_cell_size
@@ -312,7 +304,6 @@ class GameClient:
             dx = event.x - self.last_mouse_x
             dy = event.y - self.last_mouse_y
 
-            # Dacă mouse-ul s-a mișcat suficient, considerăm că e drag
             if abs(event.x - self.mouse_press_x) > self.drag_threshold or abs(
                     event.y - self.mouse_press_y) > self.drag_threshold:
                 self.has_dragged = True
@@ -325,7 +316,6 @@ class GameClient:
 
     def on_canvas_release(self, event):
         if self.is_dragging:
-            # Dacă nu a fost drag, tratează ca click
             if not self.has_dragged:
                 current_cell_size = self.cell_size * self.zoom_level
                 x_logical = math.floor((event.x - self.offset_x) / current_cell_size)
@@ -369,7 +359,6 @@ class GameClient:
         print(f"  Player symbol: {self.player_symbol}")
         print(f"  Cell occupied: {(x_logical, y_logical) in self.board}")
 
-        # Verificări în ordine
         if not self.game_active:
             self.update_info_bar("Jocul nu este activ încă!")
             self.append_chat("DEBUG: Jocul nu este activ!")
@@ -395,7 +384,6 @@ class GameClient:
             self.append_chat("DEBUG: Celulă ocupată!")
             return
 
-        # Dacă ajungem aici, mutarea e validă
         print(f"[CLIENT {self.name}] Sending valid move to server")
         try:
             self.sock.sendall(pickle.dumps({
@@ -405,7 +393,6 @@ class GameClient:
                 "player_symbol": self.player_symbol
             }))
 
-            # Nu schimba is_my_turn aici, serverul va trimite update
             self.update_info_bar(
                 f"{self.name} | Camera: {self.room_id} | Jucător: {'X' if self.player_symbol == PLAYER_X else 'O'} | Așteaptă...")
             self.append_chat(f"Ai făcut mutarea la ({x_logical}, {y_logical})")
