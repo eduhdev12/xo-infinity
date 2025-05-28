@@ -99,7 +99,7 @@ class GameClient:
             self.sock.sendall(self.name.encode("utf-8"))
             self.update_info_bar(f"Conectat ca {self.name}")
         except ConnectionError:
-            messagebox.showerror("Eroare", "Nu mă pot conecta la server", parent=self.root)
+            messagebox.showerror(f"Eroare", "Nu mă pot conecta la server {ConnectionError}", parent=self.root)
             self.root.destroy()
             return
 
