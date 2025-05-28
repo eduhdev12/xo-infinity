@@ -10,7 +10,6 @@ class PlayerSymbol(Enum):
 class Player:
     name: str
     symbol: PlayerSymbol
-    websocket: any
 
 @dataclass
 class GameRoom:
